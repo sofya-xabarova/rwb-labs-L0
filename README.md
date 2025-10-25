@@ -11,7 +11,7 @@
 
 ```bash
 git clone https://github.com/sofya-xabarova/rwb-labs-L0.git
-cd orders-service
+cd rwb-labs-L0
 ```
 ### 2. Собрать и запустить контейнеры
 ```bash
