@@ -16,6 +16,5 @@ COPY static ./static
 COPY schema.sql ./schema.sql
 
 EXPOSE 8080
-# Заменяем CMD на ENTRYPOINT и оставляем CMD пустым
 ENTRYPOINT ["./ordersvc"]
 CMD ["--help"]  # или просто CMD []

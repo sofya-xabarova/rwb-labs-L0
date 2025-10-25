@@ -72,7 +72,7 @@ type Order struct {
 	OofShard          string   `json:"oof_shard"`
 }
 
-// ----- cache loader helper -----
+// загрузчик кэша
 func LoadCacheFromDB(c *Cache, db *sql.DB) error {
 	rows, err := db.Query(`SELECT data FROM orders_json`)
 	if err != nil {
@@ -91,9 +91,7 @@ func LoadCacheFromDB(c *Cache, db *sql.DB) error {
 			log.Println("Bad JSON in DB:", err)
 			continue
 		}
-		_ = c.Set(o.OrderUID, &o) // адаптация: Set принимает (key, value) - но у нас Set ожидает (key string, value any) -> если ты сделал Set как выше, поправь
-		// В нашей реализации Set в cache.go — принимает (key string, value any) — но в примере выше Set defined as Set(key string, value any) error
-		// Если ты хочешь использовать Set(order *Order) в основном — можно вызвать c.Set(o.OrderUID, &o)
+		_ = c.Set(o.OrderUID, &o)
 		count++
 	}
 	log.Printf("Cache restored: %d orders", count)
@@ -111,7 +109,6 @@ func main() {
 
 	log.Println("Connected to PostgreSQL")
 
-	// --- Кэш: default TTL 0 (без истечения) — выбери своё значение, например 10m ---
 	defaultTTL := 0 * time.Second
 	cleanupInterval := 1 * time.Minute
 	cache := NewCache(defaultTTL, cleanupInterval)
@@ -142,7 +139,6 @@ func main() {
 			return
 		}
 
-		// Сохраняем в DB: таблица orders_json (jsonb). Если такой таблицы нет — создайте.
 		_, err := db.Exec(`INSERT INTO orders_json (order_uid, data)
                    VALUES ($1, $2)
                    ON CONFLICT (order_uid)
@@ -153,10 +149,8 @@ func main() {
 			return
 		}
 
-		// Сохраняем в кэш (ключ = order.OrderUID, value = *Order)
 		if err := cache.Set(order.OrderUID, &order); err != nil {
 			log.Println("Cache set error:", err)
-			// но не отменяем запись в DB
 		}
 
 		log.Printf("Order saved and cached: %s", order.OrderUID)
@@ -178,17 +172,15 @@ func main() {
 			http.Error(w, "order not found", http.StatusNotFound)
 			return
 		}
-		// value is any; cast
 		order, _ := v.(*Order)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(order)
 	})
 
-	// ЕДИНЫЙ обработчик для /api/orders
 	http.HandleFunc("/api/orders", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			// --- Получить список заказов (с фильтрами) ---
+			// Получить список заказов (с фильтрами)
 			q := r.URL.Query()
 			product := strings.ToLower(q.Get("product"))
 			city := strings.ToLower(q.Get("city"))
@@ -227,7 +219,7 @@ func main() {
 			json.NewEncoder(w).Encode(result)
 
 		case http.MethodPost:
-			// --- Добавить новый заказ ---
+			// Добавить новый заказ
 			var order Order
 			if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
 				http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)

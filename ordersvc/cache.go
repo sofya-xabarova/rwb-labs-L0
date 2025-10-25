@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// ICache — интерфейс кэша (по статье).
+// интерфейс кэша
 type ICache interface {
 	Set(key string, value any) error
 	Get(key string) (any, bool)
@@ -20,7 +20,6 @@ type item struct {
 	ttl   int64 // unix nano
 }
 
-// Cache — реализация кэша с mutex, map и фоновым очистителем.
 type Cache struct {
 	mu         sync.RWMutex
 	cacheMap   map[string]item
@@ -29,7 +28,7 @@ type Cache struct {
 	cleanupInt time.Duration
 }
 
-// NewCache создает кэш. defaultTTL=0 означает без TTL (вечные записи).
+// NewCache создает кэш
 func NewCache(defaultTTL, cleanupInterval time.Duration) *Cache {
 	c := &Cache{
 		cacheMap:   make(map[string]item),
@@ -37,7 +36,7 @@ func NewCache(defaultTTL, cleanupInterval time.Duration) *Cache {
 		defaultTTL: defaultTTL,
 		cleanupInt: cleanupInterval,
 	}
-	// фоновая очистка
+	// очистка
 	go func() {
 		if cleanupInterval <= 0 {
 			return
@@ -77,7 +76,6 @@ func (c *Cache) Get(key string) (any, bool) {
 	if !ok {
 		return nil, false
 	}
-	// TTL check
 	if it.ttl > 0 && time.Now().UnixNano() > it.ttl {
 		// expired: delete
 		c.mu.Lock()
