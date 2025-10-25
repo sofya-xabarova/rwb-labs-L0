@@ -88,7 +88,7 @@ func LoadCacheFromDB(c *Cache, db *sql.DB) error {
 		}
 		var o Order
 		if err := json.Unmarshal(raw, &o); err != nil {
-			log.Println("❌ Bad JSON in DB:", err)
+			log.Println("Bad JSON in DB:", err)
 			continue
 		}
 		_ = c.Set(o.OrderUID, &o) // адаптация: Set принимает (key, value) - но у нас Set ожидает (key string, value any) -> если ты сделал Set как выше, поправь
@@ -96,7 +96,7 @@ func LoadCacheFromDB(c *Cache, db *sql.DB) error {
 		// Если ты хочешь использовать Set(order *Order) в основном — можно вызвать c.Set(o.OrderUID, &o)
 		count++
 	}
-	log.Printf("🔁 Cache restored: %d orders", count)
+	log.Printf("Cache restored: %d orders", count)
 	return nil
 }
 
@@ -109,7 +109,7 @@ func main() {
 	}
 	defer db.Close()
 
-	log.Println("✅ Connected to PostgreSQL")
+	log.Println("Connected to PostgreSQL")
 
 	// --- Кэш: default TTL 0 (без истечения) — выбери своё значение, например 10m ---
 	defaultTTL := 0 * time.Second
@@ -118,7 +118,7 @@ func main() {
 
 	// Попытка восстановить кэш из DB
 	if err := LoadCacheFromDB(cache, db); err != nil {
-		log.Println("⚠️ Cache restore failed:", err)
+		log.Println("Cache restore failed:", err)
 	}
 
 	// --- NATS ---
@@ -132,13 +132,13 @@ func main() {
 		log.Fatal("NATS connect error:", err)
 	}
 	defer sc.Close()
-	log.Println("✅ Connected to NATS Streaming")
+	log.Println("Connected to NATS Streaming")
 
 	subj := "orders"
 	_, err = sc.Subscribe(subj, func(m *stan.Msg) {
 		var order Order
 		if err := json.Unmarshal(m.Data, &order); err != nil {
-			log.Println("❌ Invalid JSON:", err)
+			log.Println("Invalid JSON:", err)
 			return
 		}
 
@@ -149,17 +149,17 @@ func main() {
                    DO UPDATE SET data = EXCLUDED.data`,
 			order.OrderUID, m.Data)
 		if err != nil {
-			log.Println("❌ DB insert error:", err)
+			log.Println("DB insert error:", err)
 			return
 		}
 
 		// Сохраняем в кэш (ключ = order.OrderUID, value = *Order)
 		if err := cache.Set(order.OrderUID, &order); err != nil {
-			log.Println("❌ Cache set error:", err)
+			log.Println("Cache set error:", err)
 			// но не отменяем запись в DB
 		}
 
-		log.Printf("✅ Order saved and cached: %s", order.OrderUID)
+		log.Printf("Order saved and cached: %s", order.OrderUID)
 	}, stan.DurableName("orders-durable"))
 	if err != nil {
 		log.Fatal("Subscription error:", err)
@@ -245,13 +245,13 @@ func main() {
                    DO UPDATE SET data = EXCLUDED.data`,
 				order.OrderUID, data)
 			if err != nil {
-				log.Println("❌ DB insert error:", err)
+				log.Println("DB insert error:", err)
 				http.Error(w, "DB error", http.StatusInternalServerError)
 				return
 			}
 
 			_ = cache.Set(order.OrderUID, &order)
-			log.Printf("🆕 Order added via UI: %s", order.OrderUID)
+			log.Printf("Order added via UI: %s", order.OrderUID)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
 			w.Write([]byte(`{"status":"ok"}`))
@@ -283,7 +283,7 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
-	log.Println("🛑 Shutting down...")
+	log.Println("Shutting down...")
 
 	// graceful http shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -295,7 +295,7 @@ func main() {
 
 	// Close NATS & DB done by defer
 	wg.Wait()
-	log.Println("✅ Shutdown complete")
+	log.Println("Shutdown complete")
 }
 
 // randomID helper для уникальности clientID
