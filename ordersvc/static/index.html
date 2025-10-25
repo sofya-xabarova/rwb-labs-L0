@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Сервис заказов</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f7f7f7;
+      color: #222;
+      margin: 0;
+      padding: 40px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      padding: 20px 30px;
+    }
+
+    input, button, select {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin: 5px;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: #444;
+    }
+
+    button {
+      background-color: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #f0f0f0;
+    }
+
+    #filters-panel {
+      display: none;
+      margin-top: 10px;
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+    }
+
+    .filter-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .filter-item label {
+      flex: 1;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border-bottom: 1px solid #eee;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background: #f0f0f0;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background-color: #fafafa;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .actions button {
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Сервис заказов</h1>
+  <div class="container">
+
+    <div class="actions">
+      <input type="text" id="orderId" placeholder="ID заказа">
+      <button id="showBtn">Показать</button>
+      <button id="showAllBtn">Показать все</button>
+      <button id="filtersBtn">Фильтры ⚙️</button>
+      <button id="addBtn">Добавить заказ</button>
+    </div>
+
+    <div id="filters-panel">
+      <div class="filter-item">
+        <input type="checkbox" id="filter-product-toggle"> 
+        <label for="filter-product-toggle">Фильтр по товару</label>
+      </div>
+      <div class="filter-item" id="filter-product-box" style="display:none;">
+        <input type="text" id="product" placeholder="Название товара">
+      </div>
+
+      <div class="filter-item">
+        <input type="checkbox" id="filter-city-toggle"> 
+        <label for="filter-city-toggle">Фильтр по городу</label>
+      </div>
+      <div class="filter-item" id="filter-city-box" style="display:none;">
+        <input type="text" id="city" placeholder="Город">
+      </div>
+
+      <div class="filter-item">
+        <input type="checkbox" id="filter-customer-toggle"> 
+        <label for="filter-customer-toggle">Фильтр по имени покупателя</label>
+      </div>
+      <div class="filter-item" id="filter-customer-box" style="display:none;">
+        <input type="text" id="customer" placeholder="Имя покупателя">
+      </div>
+
+      <button id="applyFiltersBtn">Применить фильтры</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+<script>
+const resultDiv = document.getElementById("result");
+const filtersPanel = document.getElementById("filters-panel");
+
+document.getElementById("filtersBtn").onclick = () => {
+  filtersPanel.style.display = filtersPanel.style.display === "none" ? "block" : "none";
+};
+
+const toggles = [
+  { toggle: "filter-product-toggle", box: "filter-product-box" },
+  { toggle: "filter-city-toggle", box: "filter-city-box" },
+  { toggle: "filter-customer-toggle", box: "filter-customer-box" }
+];
+
+toggles.forEach(t => {
+  const toggleEl = document.getElementById(t.toggle);
+  const boxEl = document.getElementById(t.box);
+  toggleEl.addEventListener("change", () => {
+    boxEl.style.display = toggleEl.checked ? "flex" : "none";
+  });
+});
+
+// показать заказ по ID
+document.getElementById("showBtn").onclick = async () => {
+  const id = document.getElementById("orderId").value.trim();
+  if (!id) return alert("Введите ID заказа");
+  const res = await fetch(`/orders/${id}`);
+  if (!res.ok) return alert("Заказ не найден");
+  const data = await res.json();
+  renderOrders([data]);
+};
+
+// показать все заказы
+document.getElementById("showAllBtn").onclick = loadAll;
+
+// применить фильтры
+document.getElementById("applyFiltersBtn").onclick = async () => {
+  const params = new URLSearchParams();
+  if (document.getElementById("filter-product-toggle").checked) {
+    const v = document.getElementById("product").value.trim();
+    if (v) params.append("product", v);
+  }
+  if (document.getElementById("filter-city-toggle").checked) {
+    const v = document.getElementById("city").value.trim();
+    if (v) params.append("city", v);
+  }
+  if (document.getElementById("filter-customer-toggle").checked) {
+    const v = document.getElementById("customer").value.trim();
+    if (v) params.append("customer", v);
+  }
+
+  const res = await fetch(`/api/orders?${params.toString()}`);
+  const data = await res.json();
+  renderOrders(data);
+};
+
+document.getElementById("addBtn").onclick = () => {
+  window.location.href = "/add.html";
+};
+
+// функция загрузки всех заказов
+async function loadAll() {
+  const res = await fetch("/api/orders");
+  const data = await res.json();
+  renderOrders(data);
+}
+
+// рендер таблицы
+function renderOrders(orders) {
+  if (!orders || orders.length === 0) {
+    resultDiv.innerHTML = "<p>Ничего не найдено.</p>";
+    return;
+  }
+
+  let html = `<table>
+    <tr>
+      <th>ID</th>
+      <th>Имя покупателя</th>
+      <th>Город</th>
+      <th>Сумма</th>
+      <th>Товары</th>
+    </tr>`;
+  for (const o of orders) {
+    const items = o.items.map(it => `${it.name} (${it.price}₽)`).join(", ");
+    html += `<tr>
+      <td>${o.order_uid}</td>
+      <td>${o.delivery.name}</td>
+      <td>${o.delivery.city}</td>
+      <td>${o.payment.amount}</td>
+      <td>${items}</td>
+    </tr>`;
+  }
+  html += `</table>`;
+  resultDiv.innerHTML = html;
+}
+
+// при загрузке страницы сразу показываем все заказы
+window.onload = loadAll;
+</script>
+</body>
+</html>

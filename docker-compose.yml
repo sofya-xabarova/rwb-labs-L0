@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: orders_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: orders_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./initdb:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d orders_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  nats:
+    image: nats-streaming:0.25
+    container_name: nats_streaming
+    command: ["-p", "4222", "-m", "8222", "-cluster_id", "test-cluster"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    restart: always
+
+  ordersvc:
+    build: ./ordersvc
+    container_name: orders_service
+    depends_on:
+      - postgres
+      - nats
+    environment:
+      - DATABASE_URL=postgres://testuser:testpass@postgres:5432/orders_db?sslmode=disable
+      - NATS_URL=nats://nats:4222
+    ports:
+      - "8080:8080"
+    stdin_open: true  # держит STDIN открытым
+    tty: true         # выделяет псевдо-TTY
+    command: ["/bin/sh"]  # или ["/bin/bash"]
+
+  run-publisher:
+    build: ./ordersvc
+    container_name: run_publisher
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgres://testuser:testpass@postgres:5432/orders_db?sslmode=disable
+      - NATS_URL=nats://nats:4222
+    command: ["./publisher"]
+    profiles: ["run-publisher"]  # используем профиль чтобы не запускался всегда

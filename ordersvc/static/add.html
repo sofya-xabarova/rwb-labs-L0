@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Добавить заказ</title>
+<style>
+body {
+  font-family: "Segoe UI", sans-serif;
+  background: #f7f7f7;
+  color: #222;
+  margin: 0;
+  padding: 40px;
+}
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  padding: 20px 30px;
+}
+h1 { text-align: center; margin-bottom: 20px; }
+label { display:block; margin-top:10px; }
+input {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+button {
+  margin-top: 15px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #333;
+  color: #fff;
+  cursor: pointer;
+}
+button:hover { background: #555; }
+
+.item-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+.item-row input {
+  flex: 1;
+}
+.item-row button {
+  background: #999;
+}
+.item-row button:hover {
+  background: #777;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Добавить заказ</h1>
+
+  <form id="orderForm">
+    <label>Order UID:</label>
+    <input type="text" id="order_uid" required>
+
+    <h3>Информация о доставке</h3>
+    <label>Имя:</label><input type="text" id="delivery_name" required>
+    <label>Телефон:</label><input type="text" id="delivery_phone">
+    <label>Город:</label><input type="text" id="delivery_city" required>
+    <label>Адрес:</label><input type="text" id="delivery_address">
+
+    <h3>Оплата</h3>
+    <label>Transaction:</label><input type="text" id="payment_transaction">
+    <label>Сумма:</label><input type="number" id="payment_amount">
+
+    <h3>Товары</h3>
+    <div id="itemsContainer"></div>
+    <button type="button" id="addItemBtn">➕ Добавить товар</button>
+
+    <button type="submit">Сохранить заказ</button>
+  </form>
+  <p id="msg"></p>
+  <p><a href="/">← Вернуться к списку заказов</a></p>
+</div>
+
+<script>
+const container = document.getElementById("itemsContainer");
+const addItemBtn = document.getElementById("addItemBtn");
+
+function addItemRow(name = "", price = "") {
+  const row = document.createElement("div");
+  row.className = "item-row";
+  row.innerHTML = `
+    <input type="text" class="item-name" placeholder="Название товара" value="${name}">
+    <input type="number" class="item-price" placeholder="Цена" value="${price}">
+    <button type="button" class="removeItem">✖</button>
+  `;
+  row.querySelector(".removeItem").onclick = () => row.remove();
+  container.appendChild(row);
+}
+
+// добавить первый товар по умолчанию
+addItemRow();
+
+addItemBtn.onclick = () => addItemRow();
+
+document.getElementById("orderForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const items = Array.from(document.querySelectorAll(".item-row")).map((row, i) => {
+    const name = row.querySelector(".item-name").value.trim();
+    const price = parseInt(row.querySelector(".item-price").value) || 0;
+    return {
+      chrt_id: i + 1,
+      track_number: "UI",
+      price: price,
+      rid: "RID" + i,
+      name: name,
+      sale: 0,
+      size: "N/A",
+      total_price: price,
+      nm_id: i + 1,
+      brand: "Demo",
+      status: 200
+    };
+  });
+
+  const order = {
+    order_uid: document.getElementById("order_uid").value.trim(),
+    track_number: "UI" + Math.floor(Math.random() * 100000),
+    entry: "UI",
+    delivery: {
+      name: document.getElementById("delivery_name").value.trim(),
+      phone: document.getElementById("delivery_phone").value.trim(),
+      city: document.getElementById("delivery_city").value.trim(),
+      address: document.getElementById("delivery_address").value.trim(),
+      region: "",
+      zip: "",
+      email: ""
+    },
+    payment: {
+      transaction: document.getElementById("payment_transaction").value.trim(),
+      amount: parseInt(document.getElementById("payment_amount").value) || 0,
+      currency: "RUB",
+      provider: "UI",
+      payment_dt: Date.now(),
+      bank: "",
+      delivery_cost: 0,
+      goods_total: 0,
+      custom_fee: 0
+    },
+    items: items,
+    locale: "ru",
+    customer_id: "ui",
+    date_created: new Date().toISOString(),
+    delivery_service: "ui",
+    shardkey: "1",
+    sm_id: 1,
+    oof_shard: "1"
+  };
+
+  const res = await fetch("/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(order)
+  });
+
+  if (res.ok) {
+    document.getElementById("msg").innerText = "✅ Заказ успешно добавлен!";
+    document.getElementById("orderForm").reset();
+    container.innerHTML = "";
+    addItemRow();
+  } else {
+    const t = await res.text();
+    document.getElementById("msg").innerText = "Ошибка: " + t;
+  }
+};
+</script>
+</body>
+</html>
