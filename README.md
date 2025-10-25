@@ -30,8 +30,4 @@ docker compose up
 http://localhost:8080
 
 ## Демонстрация
-
-<figure class="video_container">
-  <iframe src="demo_video/demo_video.mp4" frameborder="0" allowfullscreen="true"> 
-</iframe>
-</figure>
+https://github.com/user-attachments/assets/081fc124-22dd-4e73-84ba-336b0c2a94bc
