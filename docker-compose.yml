@@ -9,7 +9,8 @@ services:
       POSTGRES_DB: orders_db
     ports:
       - "5432:5432"
-
+    volumes:
+      - ./initdb:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U testuser -d orders_db"]
       interval: 5s
@@ -37,5 +38,5 @@ services:
     ports:
       - "8080:8080"
     stdin_open: true
-    tty: true 
+    tty: true
     command: ["/bin/sh"]
