@@ -164,7 +164,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Subscription error:", err)
 	}
-	log.Printf("👂 Subscribed to [%s]", subj)
+	log.Printf("Subscribed to [%s]", subj)
 
 	// HTTP handlers
 	http.HandleFunc("/orders/", func(w http.ResponseWriter, r *http.Request) {
@@ -273,7 +273,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		log.Println("🌐 HTTP server started on :8080")
+		log.Println("HTTP server started on http://localhost:8080")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("HTTP server error: %v", err)
 		}
