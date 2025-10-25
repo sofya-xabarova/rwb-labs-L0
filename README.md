@@ -21,7 +21,10 @@ docker compose up
 
 Docker поднимет три контейнера:
 
-Контейнер | Назначение | Порт
-orders_postgres | PostgreSQL база данных | 5432
-nats_streaming | NATS Streaming сервер | 4222, 8222
-orders_service | Go API-сервис заказов | 8080
+| Контейнер | Назначение | Порт |
+| orders_postgres | PostgreSQL база данных | 5432 |
+| nats_streaming | NATS Streaming сервер | 4222, 8222 |
+| orders_service | Go API-сервис заказов | 8080 |
+
+Сервис будет запущен локально, по адресу:
+http://localhost:8080
