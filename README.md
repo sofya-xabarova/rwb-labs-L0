@@ -31,4 +31,7 @@ http://localhost:8080
 
 ## Демонстрация
 
-<video src="demo_video/demo_video.mp4" width="640" height="480" controls></video>
+<figure class="video_container">
+  <iframe src="demo_video/demo_video.mp4" frameborder="0" allowfullscreen="true"> 
+</iframe>
+</figure>
